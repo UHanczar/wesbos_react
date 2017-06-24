@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 
+import base from './../base'
+
 import Header from './Header';
 import Order from './Order';
 import Inventory from './Inventory';
@@ -17,6 +19,33 @@ class App extends Component {
     this.addFish = this.addFish.bind(this);
     this.loadSamples = this.loadSamples.bind(this);
     this.addToOrder = this.addToOrder.bind(this);
+  }
+
+  componentWillMount() {
+    // we can check state not only firebase database, but...
+    this.ref = base.syncState(`${this.props.params.storeId}/fishes`, {
+      context: this,
+      state: 'fishes'
+    });
+
+    // ...but our localStorage
+    const localStorageRef = localStorage.getItem(`order-${this.props.params.storeId}`);
+
+    if(localStorageRef) {
+      // then update our App component
+      this.setState({
+        order: JSON.parse(localStorageRef, undefined, 2)
+      });
+    }
+  }
+
+  componentWillUnmount() {
+    base.removeBinding(this.ref);
+  }
+
+  componentWillUpdate(nextProps, nextState) {
+    // console.log('Something changed', nextProps, nextState);
+    localStorage.setItem(`order-${this.props.params.storeId}`, JSON.stringify(nextState.order));
   }
 
   addFish(fish) {
@@ -57,7 +86,7 @@ class App extends Component {
             {Object.keys(fishes).map(fishId => <Fish key={fishId} index={fishId} details={fishes[fishId]} addToOrder={this.addToOrder} />)}
           </ul>
         </div>
-        <Order fishes={fishes} order={order}/>
+        <Order fishes={fishes} order={order}  params={this.props.params} />
         <Inventory addFish={this.addFish} loadSamples={this.loadSamples} />
       </div>
     );
